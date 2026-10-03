@@ -3,26 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>What Browser Am I Using?</title>
 
   <script src="https://cdn.jsdelivr.net/npm/ua-parser-js/dist/ua-parser.min.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
       margin: 0;
       padding: 40px 20px;
+      background: #f4f4f4;
       color: #111;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     .card {
       max-width: 760px;
       margin: auto;
+      padding: 32px;
       background: white;
       border-radius: 18px;
-      padding: 32px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
     }
 
     h1 {
@@ -31,29 +36,44 @@
     }
 
     .browser {
-      font-size: 28px;
+      margin: 20px 0 28px;
+      font-size: 30px;
       font-weight: 700;
-      margin: 20px 0;
     }
 
     .row {
-      padding: 10px 0;
+      display: flex;
+      padding: 11px 0;
       border-bottom: 1px solid #eee;
     }
 
     .label {
+      width: 175px;
       font-weight: 700;
-      display: inline-block;
-      width: 130px;
+    }
+
+    .value {
+      flex: 1;
     }
 
     .ua {
-      margin-top: 25px;
+      margin-top: 28px;
       padding: 16px;
       background: #f5f5f5;
       border-radius: 10px;
       font-family: monospace;
+      line-height: 1.5;
       word-break: break-all;
+    }
+
+    .pizza {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: #eee;
+      font-size: 12px;
+      vertical-align: middle;
     }
   </style>
 </head>
@@ -61,6 +81,7 @@
 <body>
 
 <div class="card">
+
   <h1>Your Browser</h1>
 
   <div class="browser" id="browser">
@@ -68,86 +89,139 @@
   </div>
 
   <div class="row">
-    <span class="label">Browser:</span>
-    <span id="browserName"></span>
+    <div class="label">Browser:</div>
+    <div class="value" id="browserName">...</div>
   </div>
 
   <div class="row">
-    <span class="label">Version:</span>
-    <span id="browserVersion"></span>
+    <div class="label">Version:</div>
+    <div class="value" id="browserVersion">...</div>
   </div>
 
   <div class="row">
-    <span class="label">Operating System:</span>
-    <span id="os"></span>
+    <div class="label">Operating System:</div>
+    <div class="value" id="os">...</div>
   </div>
 
   <div class="row">
-    <span class="label">Engine:</span>
-    <span id="engine"></span>
+    <div class="label">Engine:</div>
+    <div class="value" id="engine">...</div>
   </div>
 
   <div class="row">
-    <span class="label">CPU:</span>
-    <span id="cpu"></span>
+    <div class="label">CPU:</div>
+    <div class="value" id="cpu">...</div>
   </div>
 
   <div class="ua">
-    <strong>User-Agent</strong><br><br>
+    <strong>User-Agent</strong>
+    <br><br>
     <span id="ua"></span>
   </div>
+
 </div>
 
 <script>
-const ua = navigator.userAgent;
+(async () => {
 
-let browserName;
-let browserVersion;
+  const ua = navigator.userAgent;
 
-//
-// 🍕 PizzaBox detection FIRST
-//
-const pizzaBox = ua.match(/PizzaBox\/([\d.]+)/i);
+  const parser = new UAParser(ua);
+  const result = parser.getResult();
 
-const parser = new UAParser(ua);
-const result = parser.getResult();
+  let browserName = result.browser.name || "Unknown Browser";
+  let browserVersion = result.browser.version || "Unknown";
 
-if (pizzaBox) {
-  browserName = "PizzaBox";
-  browserVersion = pizzaBox[1];
-} else {
-  browserName = result.browser.name || "Unknown Browser";
-  browserVersion = result.browser.version || "Unknown";
-}
+  let engineName = result.engine.name || "Unknown";
+  let engineVersion = result.engine.version || "";
 
-const osName = result.os.name || "Unknown OS";
-const osVersion = result.os.version || "";
+  let osName = result.os.name || "Unknown OS";
+  let osVersion = result.os.version || "";
 
-const engineName = result.engine.name || "Unknown";
-const engineVersion = result.engine.version || "";
+  let cpu = result.cpu.architecture || "Unknown";
 
-const cpu = result.cpu.architecture || "Unknown";
+  /*
+   * PizzaBox has priority over the generic UA database.
+   */
+  const pizzaBoxMatch = ua.match(/PizzaBox\/([\d.]+)/i);
 
-document.querySelector("#browser").textContent =
-  browserName + " " + browserVersion;
+  if (pizzaBoxMatch) {
 
-document.querySelector("#browserName").textContent =
-  browserName;
+    browserName = "PizzaBox";
+    browserVersion = pizzaBoxMatch[1];
 
-document.querySelector("#browserVersion").textContent =
-  browserVersion;
+    /*
+     * PizzaBox uses Electron / Chromium.
+     * Chromium's rendering engine is Blink.
+     *
+     * AppleWebKit/537.36 remains in the UA for
+     * web compatibility; it does NOT mean that
+     * PizzaBox actually uses WebKit.
+     */
+    engineName = "Blink";
+    engineVersion = "";
 
-document.querySelector("#os").textContent =
-  osName + (osVersion ? " " + osVersion : "");
+    /*
+     * Our current PizzaBox UA explicitly declares
+     * Macintosh + Intel Mac OS X.
+     */
+    if (/Macintosh;\s*Intel Mac OS X/i.test(ua)) {
+      cpu = "x86_64";
+    }
+  }
 
-document.querySelector("#engine").textContent =
-  engineName + (engineVersion ? " " + engineVersion : "");
+  /*
+   * Try Client Hints when the browser makes them available.
+   */
+  try {
 
-document.querySelector("#cpu").textContent =
-  cpu;
+    if (
+      navigator.userAgentData &&
+      navigator.userAgentData.getHighEntropyValues
+    ) {
 
-document.querySelector("#ua").textContent =
-  ua;
+      const info =
+        await navigator.userAgentData.getHighEntropyValues([
+          "architecture",
+          "bitness"
+        ]);
+
+      if (info.architecture) {
+
+        cpu = info.architecture;
+
+        if (info.bitness) {
+          cpu += " " + info.bitness + "-bit";
+        }
+      }
+    }
+
+  } catch (error) {
+    // Keep the value obtained from UAParser / PizzaBox.
+  }
+
+  document.querySelector("#browser").textContent =
+    browserName + " " + browserVersion;
+
+  document.querySelector("#browserName").textContent =
+    browserName;
+
+  document.querySelector("#browserVersion").textContent =
+    browserVersion;
+
+  document.querySelector("#os").textContent =
+    osName + (osVersion ? " " + osVersion : "");
+
+  document.querySelector("#engine").textContent =
+    engineName + (engineVersion ? " " + engineVersion : "");
+
+  document.querySelector("#cpu").textContent =
+    cpu;
+
+  document.querySelector("#ua").textContent =
+    ua;
+
+})();
 </script>
 
 </body>
