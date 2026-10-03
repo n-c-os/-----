@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What Browser Am I Using?</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/ua-parser-js/dist/ua-parser.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 40px 20px;
+      color: #111;
+    }
+
+    .card {
+      max-width: 760px;
+      margin: auto;
+      background: white;
+      border-radius: 18px;
+      padding: 32px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 34px;
+    }
+
+    .browser {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 20px 0;
+    }
+
+    .row {
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .label {
+      font-weight: 700;
+      display: inline-block;
+      width: 130px;
+    }
+
+    .ua {
+      margin-top: 25px;
+      padding: 16px;
+      background: #f5f5f5;
+      border-radius: 10px;
+      font-family: monospace;
+      word-break: break-all;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+  <h1>Your Browser</h1>
+
+  <div class="browser" id="browser">
+    Detecting...
+  </div>
+
+  <div class="row">
+    <span class="label">Browser:</span>
+    <span id="browserName"></span>
+  </div>
+
+  <div class="row">
+    <span class="label">Version:</span>
+    <span id="browserVersion"></span>
+  </div>
+
+  <div class="row">
+    <span class="label">Operating System:</span>
+    <span id="os"></span>
+  </div>
+
+  <div class="row">
+    <span class="label">Engine:</span>
+    <span id="engine"></span>
+  </div>
+
+  <div class="row">
+    <span class="label">CPU:</span>
+    <span id="cpu"></span>
+  </div>
+
+  <div class="ua">
+    <strong>User-Agent</strong><br><br>
+    <span id="ua"></span>
+  </div>
+</div>
+
+<script>
+const ua = navigator.userAgent;
+
+let browserName;
+let browserVersion;
+
+//
+// 🍕 PizzaBox detection FIRST
+//
+const pizzaBox = ua.match(/PizzaBox\/([\d.]+)/i);
+
+const parser = new UAParser(ua);
+const result = parser.getResult();
+
+if (pizzaBox) {
+  browserName = "PizzaBox";
+  browserVersion = pizzaBox[1];
+} else {
+  browserName = result.browser.name || "Unknown Browser";
+  browserVersion = result.browser.version || "Unknown";
+}
+
+const osName = result.os.name || "Unknown OS";
+const osVersion = result.os.version || "";
+
+const engineName = result.engine.name || "Unknown";
+const engineVersion = result.engine.version || "";
+
+const cpu = result.cpu.architecture || "Unknown";
+
+document.querySelector("#browser").textContent =
+  browserName + " " + browserVersion;
+
+document.querySelector("#browserName").textContent =
+  browserName;
+
+document.querySelector("#browserVersion").textContent =
+  browserVersion;
+
+document.querySelector("#os").textContent =
+  osName + (osVersion ? " " + osVersion : "");
+
+document.querySelector("#engine").textContent =
+  engineName + (engineVersion ? " " + engineVersion : "");
+
+document.querySelector("#cpu").textContent =
+  cpu;
+
+document.querySelector("#ua").textContent =
+  ua;
+</script>
+
+</body>
+</html>
